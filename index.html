@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>studio.Bö — Kundenportal (Prototyp)</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link id="fontlink-sans" href="https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500&display=swap" rel="stylesheet">
+<link id="fontlink-serif" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;1,400&display=swap" rel="stylesheet">
+<link id="fontlink-mono" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* oneplaze brand tokens (see Brand Guidelines v1.0) */
+    --ink:#000000;
+    --ink-soft:#2F2C29;
+    --moss:#575C4F;
+    --slate:#505F59;
+    --sage:#ADB79E;
+    --sage-pale:#CED4C5;
+    --stone:#858783;
+    --stone-light:#AEAFAC;
+    --paper:#F9F9F9;
+    --mist:#D6D7D6;
+
+    /* app shell theme — defaults below match dark mode; overridden live via
+       JS (see THEMES) once the person picks light/dark near their profile.
+       Matches the "Your studio's dashboard" reference on oneplaze.io and
+       Kim's Rio Technology mood board: ink base, hairline borders, sage
+       as the one accent that pops. */
+    --bg:#1A1816;
+    --surface:transparent;
+    --surface-warm:var(--sage-pale);
+    --border:rgba(249,249,249,.1);
+    --border-strong:rgba(249,249,249,.28);
+    --text:var(--paper);
+    --text-muted:var(--stone-light);
+    --text-faint:var(--stone);
+    --fill-strong:var(--paper);
+    --fill-strong-text:var(--ink);
+    --accent:var(--sage);
+    --accent-soft:var(--sage-pale);
+    --accent-text:var(--sage);
+    --radius:6px;
+    --radius-sm:4px;
+    --radius-pill:100px;
+    --font: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --sidebar-w: 250px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:var(--font); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; position:relative; min-height:100vh;}
+  html[data-theme="dark"] body::before{
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(ellipse 1300px 800px at 50% 118%, rgba(173,183,158,.42), transparent 68%),
+      radial-gradient(ellipse 700px 520px at 85% -10%, rgba(173,183,158,.14), transparent 60%),
+      linear-gradient(115deg, transparent 38%, rgba(173,183,158,.08) 52%, transparent 66%);
+    animation: appGlowBreathe 20s ease-in-out infinite;
+  }
+  @keyframes appGlowBreathe{0%,100%{opacity:.85;}50%{opacity:1;}}
+  button, input, select, textarea{font-family:inherit; font-size:inherit; color:inherit;}
+  a{color:inherit; text-decoration:none;}
+  ::selection{background:var(--accent-soft); color:var(--accent-text);}
+  ::placeholder{color:var(--text-faint); opacity:1;}
+
+  /* ---------- utility ---------- */
+  .eyebrow{font-size:10.5px; text-transform:uppercase; letter-spacing:.2em; color:var(--text-faint); font-weight:400;}
+  .muted{color:var(--text-muted);}
+  .faint{color:var(--text-faint);}
+  .hidden{display:none !important;}
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; justify-content:center;
+    padding:9px 18px; border-radius:var(--radius-pill); border:1px solid var(--border-strong);
+    background:transparent; font-weight:400; font-size:13px; cursor:pointer; transition:all .2s ease;
+    white-space:nowrap; font-family:var(--font);
+  }
+  .btn:hover{background:var(--fill-strong); color:var(--fill-strong-text); border-color:var(--fill-strong);}
+  .btn-primary{background:var(--fill-strong); color:var(--fill-strong-text); border-color:var(--fill-strong);}
+  .btn-primary:hover{background:transparent; color:var(--text); border-color:var(--border-strong);}
+  .btn-sm{padding:6px 14px; font-size:12px;}
+  .btn:disabled{opacity:.45; cursor:default; background:transparent; color:var(--text);}
+
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:10.5px; text-transform:uppercase; letter-spacing:.2em; color:var(--text-faint); font-weight:400;}
+  .field input, .field textarea{
+    padding:10px 12px; border:1px solid var(--border-strong); border-radius:var(--radius-sm);
+    background:transparent; outline:none; color:var(--text);
+  }
+  .field select{
+    padding:10px 12px; border:1px solid var(--border-strong); border-radius:var(--radius-sm);
+    background-color:var(--bg); outline:none; color:var(--text);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(173,183,158,.18);}
+  /* Native <select> popups don't inherit the app's theme automatically —
+     force a solid, theme-matched background/text everywhere so the open
+     dropdown list is never invisible (e.g. white-on-white). */
+  select{background-color:var(--bg); color:var(--text);}
+  select option{background-color:var(--bg); color:var(--text);}
+
+  .pill-tabs{display:flex; gap:6px; flex-wrap:wrap;}
+  .pill-tab{
+    padding:6px 14px; border:1px solid var(--border-strong); border-radius:var(--radius-pill);
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; font-weight:400; cursor:pointer;
+    background:transparent; color:var(--text-muted); font-family:var(--font);
+  }
+  .pill-tab.active{background:var(--fill-strong); color:var(--fill-strong-text); border-color:var(--fill-strong);}
+
+  .badge{display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:var(--radius-pill); font-size:11px; font-weight:400; border:1px solid transparent; background:transparent;}
+  .badge-dot{width:6px; height:6px; border-radius:50%;}
+  .badge-active{border-color:var(--accent); color:var(--accent-text);}
+  .badge-active .badge-dot{background:var(--accent);}
+  .badge-dark{background:var(--fill-strong); color:var(--fill-strong-text); border-color:var(--fill-strong);}
+  .badge-outline{border-color:var(--border-strong); color:var(--text);}
+  .badge-outline .badge-dot{background:var(--stone-light);}
+  .badge-amber{border-color:var(--border-strong); color:var(--text-muted);}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px;}
+
+  .search-input{
+    display:flex; align-items:center; gap:8px; border:1px solid var(--border-strong); border-radius:var(--radius-sm);
+    padding:8px 10px; background:var(--surface); color:var(--text-muted); font-size:13px;
+  }
+  .search-input input{border:none; outline:none; background:transparent; flex:1; color:var(--text); font-size:13px;}
+  .kbd{font-size:10px; border:1px solid var(--border-strong); border-radius:4px; padding:1px 5px; color:var(--text-faint);}
+
+  /* scale-ruler progress */
+  .ruler{position:relative; height:5px; background:var(--border); border-radius:3px; margin:10px 0 8px;}
+  .ruler-fill{position:absolute; top:0; left:0; height:100%; background:var(--accent); border-radius:3px;}
+  .ruler-dot{position:absolute; top:50%; width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid var(--bg); transform:translate(-50%,-50%); box-shadow:0 0 0 1px var(--accent);}
+
+  /* ---------- shell / sidebar ---------- */
+  .shell{display:grid; grid-template-columns:var(--sidebar-w) 1fr; min-height:100vh; position:relative; z-index:1;}
+  .sidebar{border-right:1px solid var(--border); display:flex; flex-direction:column; padding:22px 16px; position:sticky; top:0; height:100vh;}
+  .brand{padding:0 4px 20px; margin-bottom:16px; border-bottom:1px solid var(--border);}
+  .brand-name{font-size:17px; font-weight:500; letter-spacing:-.01em;}
+  .brand-sub{font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:var(--text-muted); margin-top:2px;}
+  .sidebar .search-input{margin-bottom:18px;}
+  .nav{display:flex; flex-direction:column; gap:1px;}
+  .nav-item{
+    display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:var(--radius-sm);
+    color:var(--text-muted); font-size:13.5px; font-weight:500; cursor:pointer;
+  }
+  .nav-item:hover{background:rgba(249,249,249,.06);}
+  .nav-item.active{background:rgba(173,183,158,.12); color:var(--accent-text); font-weight:500;}
+  .sidebar-spacer{flex:1;}
+  .account-widget{display:flex; align-items:center; gap:10px; padding:10px; border-top:1px solid var(--border); margin-top:8px;}
+  .avatar{width:30px; height:30px; border-radius:50%; background:var(--fill-strong); color:var(--fill-strong-text); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:400; flex-shrink:0;}
+  .account-name{font-size:13px; font-weight:500;}
+  .account-role{font-size:11px; color:var(--text-muted);}
+  .theme-toggle{
+    width:28px; height:28px; border-radius:50%; flex-shrink:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+    border:1px solid var(--border); color:var(--text-muted); transition:all .15s ease;
+  }
+  .theme-toggle:hover{border-color:var(--border-strong); color:var(--text);}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px;}
+  .stat-card{border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px;}
+  .stat-num{display:block; font-size:32px; font-weight:300; letter-spacing:-.02em; color:var(--text); margin-bottom:4px;}
+  .stat-label{font-size:11.5px; color:var(--text-muted);}
+
+  /* planning / timeline — follows the normal app theme like everything
+     else (dark by default, light only when the person switches to light
+     mode). Structure/spacing modeled closely on the studio's own
+     planning-tool reference: per-day hairline gridlines, weekend shading,
+     dashed "today" line, flexible day columns that fill the available card
+     width instead of leaving dead space. */
+  .planning-card{border-color:var(--border); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .timeline-scroll{overflow-x:auto; padding-bottom:4px;}
+  .timeline-grid{display:grid; row-gap:2px; column-gap:0; align-items:center; position:relative;}
+  .tl-col-border{border-right:1px solid var(--border);}
+  .tl-head-month{
+    font-size:11px; font-weight:500; color:var(--text); text-align:left;
+    padding:0 0 8px 4px; border-bottom:1px solid var(--border); margin-bottom:6px;
+    overflow:hidden; white-space:nowrap; text-overflow:ellipsis; border-right:1px solid var(--border);
+  }
+  .tl-head{font-size:10.5px; color:var(--text-faint); text-align:center; padding-bottom:8px;}
+  .tl-head.wknd{color:var(--text); font-weight:500;}
+  .tl-label-cell{padding:9px 12px 9px 4px; display:flex; flex-direction:column; gap:5px; border-bottom:1px solid var(--border);}
+  .tl-proj-name{font-size:13px; font-weight:500; cursor:pointer; line-height:1.35; color:var(--text);}
+  .tl-proj-name:hover{color:var(--accent-text);}
+  .tl-add-row{
+    cursor:pointer; color:var(--text-muted); font-size:12.5px; font-weight:500;
+    justify-content:center; flex-direction:row; align-items:center; display:flex; padding:14px;
+  }
+  .tl-add-row:hover{color:var(--accent-text); background:rgba(173,183,158,.08);}
+  .tl-avatars{display:flex; align-items:center; gap:4px;}
+  .tl-mini-avatar{
+    width:17px; height:17px; border-radius:50%; background:var(--fill-strong); color:var(--fill-strong-text);
+    font-size:8px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .tl-add-member{
+    width:17px; height:17px; border-radius:50%; border:1px dashed var(--border-strong); color:var(--text-faint);
+    font-size:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; line-height:1;
+  }
+  .tl-add-member:hover{border-color:var(--accent); color:var(--accent-text);}
+  .tl-bar{
+    position:relative; background:transparent; border:1px solid var(--accent); color:var(--accent-text);
+    border-radius:6px; font-size:10.5px; font-weight:500; height:26px;
+    white-space:nowrap; margin:3px 2px; overflow:hidden;
+  }
+  .tl-bar-segments{display:flex; height:100%; width:100%;}
+  .tl-seg{flex:1; background:transparent; border-right:1px solid rgba(128,128,128,.18);}
+  .tl-seg:last-child{border-right:none;}
+  .tl-seg.done{background:var(--accent);}
+  .tl-seg.current{background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent);}
+  .tl-bar-label{
+    position:absolute; inset:0; display:flex; align-items:center; padding:0 9px;
+    pointer-events:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    color:#000000;
+  }
+  .tl-today{
+    border-left:1.5px dashed var(--text); pointer-events:none; position:relative; z-index:2;
+  }
+  .tl-today-label{
+    position:absolute; top:-2px; left:5px; font-size:10px; font-weight:600; color:var(--text);
+    background:var(--bg); padding:0 4px 0 0; white-space:nowrap;
+  }
+  .tl-today-label::before{content:'●'; font-size:6px; vertical-align:middle; margin-right:3px;}
+  .tl-daygrid{border-right:1px solid var(--border); pointer-events:none; z-index:0;}
+  .tl-weekend{background:rgba(128,128,128,.07); pointer-events:none; z-index:0;}
+  .tl-assign-row{
+    display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:10px 4px 14px;
+    border-bottom:1px solid var(--border); margin-bottom:2px;
+  }
+  .assign-chip{
+    font-size:11.5px; padding:5px 11px; border-radius:var(--radius-pill); border:1px solid var(--border-strong);
+    color:var(--text-muted); cursor:pointer; transition:all .12s ease; background:transparent;
+  }
+  .assign-chip:hover{border-color:var(--accent);}
+  .assign-chip.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-text); font-weight:500;}
+  .util-bar{height:6px; border-radius:3px; background:var(--border); overflow:hidden;}
+  .util-fill{height:100%; background:var(--accent); border-radius:3px; transition:width .2s ease;}
+  .util-fill.over{background:#c0654a;}
+
+  .tt-form-row{display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap;}
+  .tt-form-row .field{min-width:130px;}
+  .tt-form-row .field input, .tt-form-row .field select{width:100%;}
+
+  .main{padding:36px 44px; max-width:1120px;}
+  .main-wide{max-width:none;}
+  .page-header{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:22px; gap:16px;}
+  .page-title{font-size:24px; font-weight:500; letter-spacing:-.01em;}
+  .page-meta{font-size:12.5px; color:var(--text-muted); margin-top:4px;}
+  .toolbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap;}
+
+  /* project card (list) */
+  .project-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:12px; cursor:pointer; transition:border-color .12s;}
+  .project-card:hover{border-color:var(--text-faint);}
+  .project-card-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .project-title{font-size:15.5px; font-weight:500; margin-bottom:3px;}
+  .project-sub{font-size:12.5px; color:var(--text-muted);}
+  .project-phase-row{display:flex; align-items:center; justify-content:space-between; margin-top:4px;}
+  .project-phase-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; font-weight:500; color:var(--accent-text);}
+
+  /* tabs (detail pages) */
+  .tabbar{display:flex; gap:22px; border-bottom:1px solid var(--border); margin-bottom:24px;}
+  .tabbar-item{padding:0 0 12px; font-size:13.5px; color:var(--text-muted); font-weight:500; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;}
+  .tabbar-item.active{color:var(--text); border-color:var(--accent); font-weight:500;}
+
+  .detail-header{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px;}
+  .breadcrumb{font-size:12px; color:var(--text-faint); margin-bottom:10px;}
+  .breadcrumb span{cursor:pointer;}
+  .breadcrumb span:hover{color:var(--text-muted);}
+  .status-meta{display:flex; gap:36px; text-align:right;}
+  .status-meta-item .eyebrow{margin-bottom:4px;}
+
+  .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:16px; align-items:start;}
+  .row-line{display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .row-line:last-child{border-bottom:none;}
+
+  /* file dropzones */
+  .file-section{margin-bottom:18px;}
+  .file-section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .file-section-head .eyebrow{font-size:10.5px;}
+  .dropzone{border:1.5px dashed var(--border-strong); border-radius:var(--radius); min-height:64px; display:flex; align-items:center; justify-content:center; color:var(--text-faint); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; font-weight:500;}
+  .file-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:14px;}
+  .file-thumb{border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; background:transparent;}
+  .file-thumb-img{height:100px; background:linear-gradient(135deg,var(--mist),var(--stone-light)); display:flex; align-items:center; justify-content:center; color:#00000055; font-size:22px;}
+  .file-thumb-meta{padding:8px 10px; display:flex; align-items:center; justify-content:space-between;}
+  .file-thumb-name{font-size:11.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .file-thumb-size{font-size:10.5px; color:var(--text-faint);}
+
+  /* messages */
+  .msg-box{display:flex; gap:10px;}
+  .msg-box textarea{flex:1; resize:none; min-height:44px;}
+
+  /* planraum */
+  .board-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer;}
+  .board-row:hover .project-title{color:var(--accent-text);}
+  .whiteboard{position:fixed; inset:0; background:var(--bg); z-index:50; display:flex; flex-direction:column;}
+  .wb-toolbar{display:flex; align-items:center; gap:10px; padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface);}
+  .wb-body{flex:1; display:grid; grid-template-columns:1fr 260px; overflow:hidden;}
+  .wb-canvas{position:relative; overflow:auto; padding:40px;}
+  .wb-render{width:420px; border:1px solid var(--border); box-shadow:0 12px 32px rgba(0,0,0,.5);}
+  .wb-render img{width:100%; display:block;}
+  .sticky{position:absolute; width:150px; padding:10px 12px; border-radius:4px; font-size:12px; box-shadow:0 3px 10px rgba(0,0,0,.35); color:var(--ink-soft);}
+  .sticky-change{background:var(--sage-pale); border:1px solid var(--sage);}
+  .sticky-note{background:var(--surface-warm); border:1px solid var(--stone-light);}
+  .sticky-label{font-size:9px; text-transform:uppercase; letter-spacing:.06em; font-weight:500; color:var(--moss); margin-bottom:3px;}
+  .pin{position:absolute; width:20px; height:20px; border-radius:50% 50% 50% 0; background:var(--accent); transform:rotate(-45deg) translate(-50%,-100%); transform-origin:0 0;}
+  .wb-chat{border-left:1px solid var(--border); background:var(--surface); padding:16px; overflow-y:auto;}
+  .wb-chat-msg{margin-bottom:14px;}
+  .wb-chat-msg .who{font-size:12px; font-weight:500;}
+  .wb-chat-msg .time{font-size:10px; color:var(--text-faint); margin-left:6px; font-weight:400;}
+  .wb-chat-msg .txt{font-size:12.5px; color:var(--text-muted); margin-top:2px;}
+  .wb-chat-msg[draggable], .sticky[draggable]{cursor:grab;}
+  .wb-chat-msg[draggable]:active, .sticky[draggable]:active{cursor:grabbing;}
+  .wb-drop-zone{
+    margin-top:18px; padding:16px 14px; border:1.5px dashed var(--border-strong); border-radius:var(--radius);
+    display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center;
+    color:var(--text-faint); font-size:11px; line-height:1.4; transition:all .15s ease;
+  }
+  .wb-drop-zone.drag-over{border-color:var(--accent); background:rgba(173,183,158,.12); color:var(--accent-text); border-style:solid;}
+  .wb-drop-zone.drag-success{border-color:var(--accent); background:rgba(173,183,158,.18); color:var(--accent-text); border-style:solid; font-weight:500;}
+  .wb-drop-icon{font-size:17px;}
+
+  /* settings */
+  .settings-block{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:16px;}
+  .settings-block h3{font-size:15px; font-weight:500; margin-bottom:3px;}
+  .settings-block > p.muted{font-size:12.5px; margin-bottom:16px;}
+  .swatches{display:flex; gap:10px; flex-wrap:wrap;}
+  .swatch{display:flex; align-items:center; gap:8px; padding:9px 14px; border:1.5px solid var(--border-strong); border-radius:var(--radius-sm); cursor:pointer; font-size:13px; font-weight:500;}
+  .swatch.active{border-color:var(--text);}
+  .swatch-dot{width:14px; height:14px; border-radius:50%;}
+  .font-swatch{min-width:90px; justify-content:center; font-size:14px;}
+
+  .accent-mode-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .accent-mode-card{
+    display:flex; align-items:center; gap:13px; padding:16px 18px;
+    border:1.5px solid var(--border-strong); border-radius:var(--radius); cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .accent-mode-card:hover{background:rgba(173,183,158,.06);}
+  .accent-mode-card.active{border-color:var(--text);}
+  .accent-mode-dot{width:24px; height:24px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,.08);}
+  .accent-mode-title{font-weight:500; font-size:13.5px;}
+  .custom-color-row{display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap;}
+  .custom-color-row input[type=color]{
+    width:44px; height:38px; padding:2px; border:1px solid var(--border-strong);
+    border-radius:var(--radius-sm); background:transparent; cursor:pointer;
+  }
+  .custom-color-row input[type=text]{
+    width:110px; padding:9px 11px; border:1px solid var(--border-strong); border-radius:var(--radius-sm);
+    background-color:var(--bg); color:var(--text); text-transform:uppercase; letter-spacing:.03em;
+  }
+  @media (max-width:640px){ .accent-mode-grid{grid-template-columns:1fr;} }
+
+  input[type=checkbox], input[type=radio]{accent-color:var(--accent);}
+  .kv-table{width:100%; border-collapse:collapse;}
+  .kv-table th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); font-weight:500; padding:0 8px 8px 0;}
+  .kv-table td{padding:5px 8px 5px 0;}
+  .kv-table input[type=text], .kv-table input[type=number]{width:100%; padding:8px 10px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background:var(--surface);}
+  .kv-table select{padding:8px 6px; border:1px solid var(--border-strong); border-radius:var(--radius-sm); background-color:var(--bg); color:var(--text);}
+  .kv-table .chk{display:flex; align-items:center; gap:6px; font-size:12px; white-space:nowrap;}
+
+  /* login */
+  .login-shell{display:grid; grid-template-columns:1fr 1fr; min-height:100vh; position:relative; z-index:1;}
+  .login-left{
+    display:flex; flex-direction:column; padding:56px 96px;
+    background:var(--sage-pale); color:var(--ink-soft);
+    order:2;
+  }
+  .login-topbar{display:flex; justify-content:space-between; align-items:flex-start;}
+  .login-left .brand-sub{color:var(--moss);}
+  .lang-toggle{display:flex; gap:6px;}
+  .lang-btn{width:30px; height:26px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; border-radius:4px; cursor:pointer; color:var(--moss);}
+  .login-left .lang-btn.active{background:var(--ink); color:var(--paper);}
+  .login-form-wrap{flex:1; display:flex; flex-direction:column; justify-content:center; max-width:340px;}
+  .login-form-wrap h1{font-size:24px; font-weight:500; margin:6px 0 22px; color:var(--ink);}
+  .login-form-wrap .eyebrow{color:var(--moss);}
+  .login-form-wrap .field{margin-bottom:14px;}
+  .login-form-wrap .field label{color:var(--moss);}
+  .login-form-wrap .field input{
+    border:none; border-bottom:1px solid var(--stone); border-radius:0; padding:6px 2px;
+    background:transparent; color:var(--ink); font-size:14px;
+  }
+  .login-form-wrap .field input:focus{border-color:var(--ink); box-shadow:none;}
+  .login-form-wrap .field input::placeholder{color:var(--stone);}
+  .login-form-wrap .btn-primary{
+    width:100%; padding:12px; margin-top:6px; font-size:14px;
+    background:var(--ink); color:var(--paper); border-color:var(--ink);
+  }
+  .login-form-wrap .btn-primary:hover{background:transparent; color:var(--ink); border-color:var(--ink);}
+  .forgot{font-size:12px; color:var(--moss); text-decoration:underline; margin-top:2px; display:inline-block; cursor:pointer;}
+  .login-foot{font-size:12px; color:var(--moss); margin-top:20px;}
+  .login-foot a{color:var(--ink); text-decoration:underline;}
+  .login-copyright{font-size:11.5px; color:var(--stone);}
+  .login-right{position:relative; background:var(--ink); display:flex; align-items:flex-end; padding:48px; overflow:hidden; order:1;}
+  .login-ribbons{position:absolute; inset:0; pointer-events:none;}
+  .login-ribbons svg{width:100%; height:100%; overflow:visible;}
+  .lr1{animation:lrDrift1 22s ease-in-out infinite; transform-origin:center; transform-box:fill-box;}
+  .lr2{animation:lrDrift2 28s ease-in-out infinite; transform-origin:center; transform-box:fill-box;}
+  @keyframes lrDrift1{0%,100%{transform:translate3d(0,0,0) scaleY(1);}50%{transform:translate3d(-5%,3%,0) scaleY(1.1);}}
+  @keyframes lrDrift2{0%,100%{transform:translate3d(0,0,0) scaleX(1);}50%{transform:translate3d(6%,-3%,0) scaleX(1.08);}}
+  .login-glow{position:absolute; width:120%; height:70%; left:50%; top:40%; transform:translate(-50%,-50%); background:radial-gradient(ellipse at center, rgba(173,183,158,.18), transparent 62%); pointer-events:none; animation:lrBreathe 14s ease-in-out infinite;}
+  @keyframes lrBreathe{0%,100%{opacity:.75; transform:translate(-50%,-50%) scale(1);} 50%{opacity:1; transform:translate(-50%,-50%) scale(1.08);}}
+  .login-right::before{content:''; position:absolute; inset:0; background:linear-gradient(0deg, rgba(0,0,0,.65), rgba(0,0,0,.05) 55%);}
+  .login-right-text{position:relative; color:var(--paper); max-width:420px; z-index:2;}
+  .login-right-text h2{font-size:26px; font-weight:500; line-height:1.25; margin-bottom:10px;}
+  .login-right-text p{font-size:13px; opacity:.85; line-height:1.5;}
+  .pwd-wrap{position:relative;}
+  .pwd-toggle{position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--stone); font-size:13px;}
+
+  .empty-note{font-size:12px; color:var(--text-faint); text-align:center; padding:14px; border-top:1px dashed var(--border); margin-top:18px;}
+
+
+  @media (max-width: 900px){
+    .shell{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .login-shell{grid-template-columns:1fr;}
+    .login-right{display:none;}
+    .two-col{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   ONEPLAZE / studio.Bö — Portal Prototype
+   Single-file, in-memory state — visual/functional prototype
+   for design + flow iteration. Not connected to any backend.
+   ============================================================ */
+
+// Official white-label swatch set — oneplaze Brand Guidelines v1.0, §08
+// Official white-label swatch set — oneplaze Brand Guidelines v1.0, §08
+// hex = true brand color (shown in the picker, used for fills/borders)
+// Brand Guidelines §08: "Accent color — replaces sage everywhere sage is
+// used. Any hex value." — so the real product only needs ONE fixed preset
+// (the system default) plus a free hex input for a studio's own branding.
+const ACCENTS = {
+  sage: {label:'Oneplaze Standard', hex:'#ADB79E', soft:'#CED4C5', glow:'#ADB79E', deep:'#575C4F'},
+};
+
+function clamp255(n){ return Math.max(0, Math.min(255, Math.round(n))); }
+function hexToRgb(hex){
+  hex = (hex||'#ADB79E').replace('#','');
+  if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+  const num = parseInt(hex,16) || 0;
+  return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+}
+function rgbToHex({r,g,b}){
+  return '#' + [r,g,b].map(v=>clamp255(v).toString(16).padStart(2,'0')).join('');
+}
+function mixHex(hexA, hexB, weightB){
+  const a=hexToRgb(hexA), b=hexToRgb(hexB);
+  return rgbToHex({ r:a.r+(b.r-a.r)*weightB, g:a.g+(b.g-a.g)*weightB, b:a.b+(b.b-a.b)*weightB });
+}
+// Derives readable soft/glow/deep companions from any arbitrary hex, the
+// same roles the preset ACCENTS entries carry — so a custom brand color
+// works everywhere sage does, on both light and dark backgrounds.
+function computeCustomAccent(hex){
+  const safe = /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : '#ADB79E';
+  return {
+    label:'Eigene Farbe', hex:safe,
+    soft: mixHex(safe, '#FFFFFF', .78),
+    glow: mixHex(safe, '#FFFFFF', .35),
+    deep: mixHex(safe, '#000000', .35),
+  };
+}
+
+// Approved white-label typefaces — Brand Guidelines §08 ("not an open upload")
+const FONTS = {
+  sans:  {label:'Sans',  family:"'General Sans', -apple-system, sans-serif"},
+  serif: {label:'Serif', family:"'Newsreader', serif"},
+  mono:  {label:'Mono',  family:"'IBM Plex Mono', monospace"},
+};
+
+// App shell theme — everything except the login screen (which stays on its
+// fixed sage/ink brand moment regardless of what the person picks here).
+const THEMES = {
+  dark:  { bg:'#1A1816', surface:'transparent', border:'rgba(249,249,249,.1)', borderStrong:'rgba(249,249,249,.28)', text:'#F9F9F9', textMuted:'#AEAFAC', textFaint:'#858783', fillStrong:'#F9F9F9', fillStrongText:'#000000' },
+  light: { bg:'#F9F9F9', surface:'#FFFFFF',   border:'#D6D7D6',              borderStrong:'#AEAFAC',              text:'#2F2C29', textMuted:'#575C4F', textFaint:'#858783', fillStrong:'#000000', fillStrongText:'#F9F9F9' },
+};
+
+const state = {
+  authed: false,
+  loginEmail: '',
+  loginPassword: '',
+  pwdVisible: false,
+  lang: 'DE',
+  view: 'dashboard',       // dashboard | projects | project | tasks | clients | team | settings
+  projectId: 'p1',
+  projectTab: 'overview',  // overview | tasks | files | messages | planraum | details
+  whiteboardOpen: false,
+  accentMode: 'system',      // 'system' (Oneplaze Sage) | 'custom' (own hex)
+  customAccentHex: '#993114', // pre-filled with studio.Bö's own historic brand color
+  font: 'sans',
+  theme: 'dark',
+  newTaskText: '',
+  planningDayOffset: 0,
+  planningExpanded: null, // project id whose team-assignment editor is open
+  planningAssignPickerFor: null, // project id currently showing the "+ Mitarbeiter" dropdown
+  ttViewMemberId: null, // which team member's personal breakdown is shown (defaults to current user)
+};
+
+const DATA = {
+  studio: { name: 'studio.Bö', logo: 'Bö', accountName: 'boecher', accountRole: 'Admin' },
+  projects: [
+    {
+      id: 'p1', number: '2731', title: '2731 — Musterprojekt Architekten · Beispielhaus',
+      typeLine: 'Großes Mehrfamilienhaus / anspruchsvolles Einfamilienhaus',
+      address: 'Musterstraße 1, Bremen',
+      status: 'Aktiv', date: '13. Aug. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 2,
+      tasksOpen: 1,
+      start: '2026-08-03', end: '2026-09-18',
+      assignedTeam: ['m2','m3'], budgetHours: 180,
+    },
+    {
+      id: 'p2', number: '2810', title: '2810 — Nordlicht Entwicklung · Wohnquartier',
+      typeLine: 'Quartier / größere Projektentwicklung',
+      address: 'Am Nordhafen 8, Bremen',
+      status: 'Aktiv', date: '05. Aug. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 1,
+      tasksOpen: 0,
+      start: '2026-08-17', end: '2026-10-23',
+      assignedTeam: ['m2','m4'], budgetHours: 320,
+    },
+    {
+      id: 'p3', number: '2695', title: '2695 — Uferblick Projektentwicklung · Bürokomplex',
+      typeLine: 'Großes Mehrfamilienhaus / anspruchsvolles Einfamilienhaus',
+      address: 'Uferpromenade 14, Bremen',
+      status: 'Aktiv', date: '22. Jul. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 3,
+      tasksOpen: 0,
+      start: '2026-07-20', end: '2026-08-28',
+      assignedTeam: ['m3','m4'], budgetHours: 150,
+    },
+    {
+      id: 'p4', number: '2846', title: '2846 — Kastenholz Immobilien · Reihenhauszeile',
+      typeLine: 'Einfamilienhaus / kleines Mehrfamilienhaus',
+      address: 'Kastenholzweg 3, Bremen',
+      status: 'Aktiv', date: '20. Aug. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 1,
+      tasksOpen: 0,
+      start: '2026-08-20', end: '2026-09-30',
+      assignedTeam: ['m1','m3'], budgetHours: 90,
+    },
+    {
+      id: 'p5', number: '2701', title: '2701 — Dornbusch Wohnbau · Penthouse-Sanierung',
+      typeLine: 'Individuell / Sonstiges',
+      address: 'Dornbuschstraße 21, Bremen',
+      status: 'Aktiv', date: '15. Jul. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 3,
+      tasksOpen: 0,
+      start: '2026-07-15', end: '2026-08-22',
+      assignedTeam: ['m2'], budgetHours: 70,
+    },
+    {
+      id: 'p6', number: '2758', title: '2758 — Marschland Projektentwicklung · Studentenwohnen',
+      typeLine: 'Quartier / größere Projektentwicklung',
+      address: 'Marschlandallee 60, Bremen',
+      status: 'Aktiv', date: '01. Sep. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 0,
+      tasksOpen: 0,
+      start: '2026-09-01', end: '2026-10-15',
+      assignedTeam: ['m4'], budgetHours: 280,
+    },
+    {
+      id: 'p7', number: '2790', title: '2790 — Silberkamp Architekten · Klinikneubau',
+      typeLine: 'Quartier / größere Projektentwicklung',
+      address: 'Silberkamp 9, Bremen',
+      status: 'Aktiv', date: '25. Jul. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 4,
+      tasksOpen: 0,
+      start: '2026-07-25', end: '2026-08-14',
+      assignedTeam: ['m1','m2','m3'], budgetHours: 260,
+    },
+    {
+      id: 'p8', number: '2812', title: '2812 — Rehder Grundbesitz · Boutique-Hotel',
+      typeLine: 'Großes Mehrfamilienhaus / anspruchsvolles Einfamilienhaus',
+      address: 'Rehderdeich 5, Bremen',
+      status: 'Aktiv', date: '10. Aug. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 2,
+      tasksOpen: 0,
+      start: '2026-08-10', end: '2026-09-25',
+      assignedTeam: ['m3','m4'], budgetHours: 200,
+    },
+    {
+      id: 'p9', number: '2865', title: '2865 — Wattblick Development · Ferienhaussiedlung',
+      typeLine: 'Quartier / größere Projektentwicklung',
+      address: 'Wattblickstraße 44, Cuxhaven',
+      status: 'Aktiv', date: '10. Sep. 2026',
+      phases: ['Anfrage','Weißmodell','3D Modellierung','Review','Finalisierung'],
+      phaseIndex: 1,
+      tasksOpen: 0,
+      start: '2026-09-10', end: '2026-10-30',
+      assignedTeam: ['m2','m4'], budgetHours: 300,
+    },
+  ],
+  tasks: [
+    { id: 't1', title: '2731 — Musterprojekt Architekten · Beispielhaus', tag: 'Unterlagen fehlen', project: '2731 — Musterprojekt Architekten · Beispielhaus', date: '13. Aug. 2026, 09:03', done:false },
+  ],
+  clients: [
+    { id:'c1', email:'kontakt@musterprojekt-architekten.de', status:'Eingeladen', validUntil:'27. Aug. 2026' },
+  ],
+  team: [
+    { id:'m1', name:'admin', email:'admin@oneplaze.io', role:'Admin', since:'08. Aug. 2026', weeklyHours:40, vacationDaysPerYear:30 },
+    { id:'m2', name:'boecher', email:'boecher@studio-boe.de', role:'Admin', since:'08. Aug. 2026', weeklyHours:40, vacationDaysPerYear:30 },
+    { id:'m3', name:'Team-Mitglied A', email:'teamA@studio-boe.de', role:'Team', since:'13. Aug. 2026', weeklyHours:40, vacationDaysPerYear:28 },
+    { id:'m4', name:'Team-Mitglied B', email:'teamB@studio-boe.de', role:'Team', since:'13. Aug. 2026', weeklyHours:30, vacationDaysPerYear:22 },
+  ],
+  // Worked hours — logged against a project (projectId set) or general work (projectId:null)
+  timeEntries: [
+    { id:'te1', memberId:'m2', date:'2026-08-03', hours:7,   projectId:'p1', note:'Kundenabstimmung + Whitemodel-Review' },
+    { id:'te2', memberId:'m2', date:'2026-08-04', hours:8,   projectId:'p1', note:'3D Modellierung Fassade' },
+    { id:'te3', memberId:'m2', date:'2026-08-05', hours:6.5, projectId:'p2', note:'Anfrage-Aufbereitung' },
+    { id:'te4', memberId:'m2', date:'2026-08-06', hours:8,   projectId:'p7', note:'Finalisierung Renderings' },
+    { id:'te5', memberId:'m2', date:'2026-08-07', hours:5,   projectId:null, note:'Teammeeting, Admin' },
+    { id:'te6', memberId:'m2', date:'2026-08-10', hours:8,   projectId:'p5', note:'Review-Korrekturen' },
+    { id:'te7', memberId:'m2', date:'2026-08-11', hours:9,   projectId:'p1', note:'Kamerafahrten Animation' },
+    { id:'te8', memberId:'m2', date:'2026-08-12', hours:8,   projectId:'p7', note:'Abgabe vorbereiten' },
+    { id:'te9', memberId:'m2', date:'2026-08-13', hours:4,   projectId:'p9', note:'Erstgespräch Wattblick' },
+    { id:'te10', memberId:'m3', date:'2026-08-03', hours:8,  projectId:'p1', note:'Weißmodell Aufbau' },
+    { id:'te11', memberId:'m3', date:'2026-08-04', hours:8,  projectId:'p3', note:'Review-Feedback einarbeiten' },
+    { id:'te12', memberId:'m3', date:'2026-08-05', hours:7,  projectId:'p4', note:'Erstmodellierung Reihenhäuser' },
+    { id:'te13', memberId:'m3', date:'2026-08-06', hours:8,  projectId:'p7', note:'Lichtsetup Klinikneubau' },
+    { id:'te14', memberId:'m3', date:'2026-08-10', hours:8,  projectId:'p8', note:'Texturierung Fassade' },
+    { id:'te15', memberId:'m3', date:'2026-08-11', hours:8,  projectId:'p8', note:'Materialabstimmung' },
+    { id:'te16', memberId:'m3', date:'2026-08-12', hours:6,  projectId:'p1', note:'Kundenkorrekturen' },
+    { id:'te17', memberId:'m4', date:'2026-08-03', hours:6,  projectId:'p3', note:'Renderqueue Bürokomplex' },
+    { id:'te18', memberId:'m4', date:'2026-08-04', hours:6,  projectId:'p2', note:'Weißmodell Wohnpark' },
+    { id:'te19', memberId:'m4', date:'2026-08-05', hours:6,  projectId:'p8', note:'Kamerastandpunkte Hotel' },
+    { id:'te20', memberId:'m4', date:'2026-08-10', hours:6,  projectId:'p6', note:'Anfrageaufbereitung Studentenwohnen' },
+    { id:'te21', memberId:'m4', date:'2026-08-11', hours:6,  projectId:'p9', note:'Vorabzüge Ferienhaussiedlung' },
+    { id:'te22', memberId:'m4', date:'2026-08-12', hours:5,  projectId:null, note:'Software-Update, Systempflege' },
+    { id:'te23', memberId:'m1', date:'2026-08-06', hours:3,  projectId:null, note:'Rechnungen, Verwaltung' },
+    { id:'te24', memberId:'m1', date:'2026-08-11', hours:2,  projectId:null, note:'Onboarding neues Teammitglied' },
+  ],
+  // Absences — vacation and sick days
+  absences: [
+    { id:'ab1', memberId:'m3', date:'2026-08-07', type:'krankheit', note:'' },
+    { id:'ab2', memberId:'m3', date:'2026-08-13', type:'krankheit', note:'' },
+    { id:'ab3', memberId:'m4', date:'2026-08-13', type:'urlaub', note:'' },
+    { id:'ab4', memberId:'m2', date:'2026-07-27', type:'urlaub', note:'' },
+    { id:'ab5', memberId:'m2', date:'2026-07-28', type:'urlaub', note:'' },
+  ],
+  files: {
+    unterlagen: [],
+    weissmodell: [],
+    review: [],
+    planraum: [
+      { name:'Zwischenstand 02.jpg', size:'1,1 MB' },
+      { name:'Zwischenstand 01.jpg', size:'998,9 KB' },
+    ],
+  },
+  boards: [
+    { id:'b1', name:'Vorabzüge im Weißmodell', date:'13. Aug. 2026' },
+  ],
+  leistungskatalog: {
+    gebaeudetypen: [
+      { name:'Einfamilienhaus / kleines Mehrfamilienhaus', price:950, days:3, active:true },
+      { name:'Großes Mehrfamilienhaus / anspruchsvolles Einfamilienhaus', price:1650, days:5, active:true },
+      { name:'Quartier / größere Projektentwicklung', price:3200, days:9, active:true },
+      { name:'Individuell / Sonstiges', price:null, days:null, active:true },
+    ],
+    leistungen: [
+      { name:'Außenraumvisualisierung', price:750, type:'from', days:2, active:true },
+      { name:'Innenraumvisualisierung', price:750, type:'from', days:2, active:true },
+      { name:'Virtual-Reality-Tour', price:1800, type:'fixed', days:4, active:true },
+      { name:'Animation', price:2400, type:'fixed', days:5, active:true },
+      { name:'Brand Identity', price:3500, type:'fixed', days:10, active:true },
+      { name:'Website', price:4200, type:'fixed', days:12, active:true },
+      { name:'Exposé-Erstellung', price:890, type:'fixed', days:3, active:true },
+      { name:'Flatfinder / interaktives Vermarktungstool', price:2100, type:'fixed', days:6, active:true },
+      { name:'Social-Media-Paket S', price:450, type:'monthly', days:null, active:true },
+    ],
+  },
+};
+
+function accent(){ return state.accentMode==='custom' ? computeCustomAccent(state.customAccentHex) : ACCENTS.sage; }
+function activeFont(){ return FONTS[state.font]; }
+function applyAccentVars(){
+  const a = accent();
+  const root = document.documentElement.style;
+  root.setProperty('--accent', a.hex);
+  root.setProperty('--accent-soft', a.soft);
+  root.setProperty('--accent-text', state.theme==='dark' ? a.glow : a.deep);
+  root.setProperty('--font', activeFont().family);
+  document.documentElement.setAttribute('data-theme', state.theme);
+
+  const t = THEMES[state.theme];
+  root.setProperty('--bg', t.bg);
+  root.setProperty('--surface', t.surface);
+  root.setProperty('--border', t.border);
+  root.setProperty('--border-strong', t.borderStrong);
+  root.setProperty('--text', t.text);
+  root.setProperty('--text-muted', t.textMuted);
+  root.setProperty('--text-faint', t.textFaint);
+  root.setProperty('--fill-strong', t.fillStrong);
+  root.setProperty('--fill-strong-text', t.fillStrongText);
+}
+
+function initials(name){
+  return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+/* ---------------- planning timeline date helpers ---------------- */
+const PLANNING_DAYS = 32;                // ~4.5 weeks — over "one full month", compact enough to avoid horizontal scroll
+const PLANNING_ANCHOR = '2026-08-01';    // window 0 start
+const MS_DAY = 24*3600*1000;
+
+function planningWindowStart(){
+  return new Date(new Date(PLANNING_ANCHOR).getTime() + state.planningDayOffset*MS_DAY);
+}
+function dayOffsetFrom(windowStart, dateStr){
+  return Math.round((new Date(dateStr) - windowStart) / MS_DAY);
+}
+function planningDays(){
+  const start = planningWindowStart();
+  const days = [];
+  for(let i=0;i<PLANNING_DAYS;i++) days.push(new Date(start.getTime() + i*MS_DAY));
+  return days;
+}
+// Groups consecutive days by month for the header row, e.g. { label:'August', count:31 }
+function planningMonthGroups(days){
+  const groups = [];
+  days.forEach(d=>{
+    const key = d.getFullYear()+'-'+d.getMonth();
+    if(groups.length && groups[groups.length-1].key===key) groups[groups.length-1].count++;
+    else groups.push({ key, label:d.toLocaleDateString('de-DE',{month:'long', year:'numeric'}), count:1 });
+  });
+  return groups;
+}
+// Clamped grid-column span (1-indexed, +1 offset for the label column)
+function barSpan(startStr, endStr){
+  const start = planningWindowStart();
+  let s = dayOffsetFrom(start, startStr);
+  let e = dayOffsetFrom(start, endStr) + 1;
+  const clippedStart = s < 0;
+  const clippedEnd = e > PLANNING_DAYS;
+  s = Math.max(0, Math.min(PLANNING_DAYS, s));
+  e = Math.max(0, Math.min(PLANNING_DAYS, e));
+  if(e <= s) return null;
+  return { colStart: s+2, colEnd: e+2, clippedStart, clippedEnd };
+}
+function todayColumnIndex(){
+  const start = planningWindowStart();
+  const off = dayOffsetFrom(start, '2026-08-13');
+  if(off < 0 || off >= PLANNING_DAYS) return null;
+  return off;
+}
+function planningGridRowCount(){
+  const projectRows = DATA.projects.reduce((sum,p)=> sum + 1 + (state.planningExpanded===p.id?1:0), 0);
+  return 2 + projectRows + 1; // month-header row + day-header row + project rows + "add project" row
+}
+
+/* ---------------- time tracking helpers ---------------- */
+const TT_MONTH_PREFIX = '2026-08';
+const TT_TODAY = '2026-08-13';
+
+function currentMember(){
+  return DATA.team.find(m=>m.name===DATA.studio.accountName) || DATA.team[0];
+}
+function countWeekdays(startStr, endStr){
+  let count = 0;
+  let d = new Date(startStr);
+  const end = new Date(endStr);
+  while(d <= end){
+    const day = d.getDay();
+    if(day!==0 && day!==6) count++;
+    d = new Date(d.getTime() + MS_DAY);
+  }
+  return count;
+}
+function memberTimeStats(member){
+  const entries = DATA.timeEntries.filter(e=>e.memberId===member.id && e.date.startsWith(TT_MONTH_PREFIX));
+  const ist = entries.reduce((s,e)=>s+e.hours,0);
+  const weekdaysSoFar = countWeekdays(TT_MONTH_PREFIX+'-01', TT_TODAY);
+  const soll = (member.weeklyHours/5) * weekdaysSoFar;
+  const saldo = ist - soll;
+  const urlaubGenommen = DATA.absences.filter(a=>a.memberId===member.id && a.type==='urlaub' && a.date.startsWith('2026')).length;
+  const krankheitstage = DATA.absences.filter(a=>a.memberId===member.id && a.type==='krankheit' && a.date.startsWith('2026')).length;
+  return { ist, soll, saldo, urlaubGenommen, urlaubRest: member.vacationDaysPerYear - urlaubGenommen, krankheitstage, entries };
+}
+function projectHoursStats(project){
+  const logged = DATA.timeEntries.filter(e=>e.projectId===project.id).reduce((s,e)=>s+e.hours,0);
+  const budget = project.budgetHours || 0;
+  return { logged, budget, pct: budget ? Math.min(100, (logged/budget)*100) : 0 };
+}
+function fmtHours(n){
+  return (Math.round(n*10)/10).toLocaleString('de-DE');
+}
+
+/* ---------------- render root ---------------- */
+function render(){
+  applyAccentVars();
+  const app = document.getElementById('app');
+  app.innerHTML = state.authed ? renderShell() : renderLogin();
+  bindEvents();
+}
+
+/* ================= LOGIN ================= */
+function renderLogin(){
+  return `
+  <div class="login-shell">
+    <div class="login-left">
+      <div class="login-topbar">
+        <div>
+          <div class="brand-name">studio.Bö</div>
+          <div class="brand-sub">Kundenportal</div>
+        </div>
+        <div class="lang-toggle">
+          <div class="lang-btn ${state.lang==='EN'?'active':''}" data-act="lang" data-val="EN">EN</div>
+          <div class="lang-btn ${state.lang==='DE'?'active':''}" data-act="lang" data-val="DE">DE</div>
+        </div>
+      </div>
+      <div class="login-form-wrap">
+        <div class="eyebrow">Kundenportal</div>
+        <h1>Anmelden</h1>
+        <div class="field">
+          <label>E-Mail</label>
+          <input type="text" id="loginEmail" placeholder="ihre@email.de" value="${state.loginEmail}">
+        </div>
+        <div class="field">
+          <label>Passwort</label>
+          <div class="pwd-wrap">
+            <input type="${state.pwdVisible?'text':'password'}" id="loginPassword" placeholder="••••••••••••" value="${state.loginPassword}">
+            <span class="pwd-toggle" data-act="toggle-pwd">${state.pwdVisible?'🙈':'👁'}</span>
+          </div>
+        </div>
+        <span class="forgot">Passwort vergessen?</span>
+        <button class="btn btn-primary" data-act="login">Anmelden</button>
+        <div class="login-foot">Noch kein Zugang? Ihren persönlichen Registrierungslink erhalten Sie direkt von studio.Bö — <a href="#">zum Kontaktformular</a>.</div>
+      </div>
+      <div class="login-copyright">oneplaze.io - The Operating System for Agencies</div>
+    </div>
+    <div class="login-right">
+      <div class="login-glow"></div>
+      <div class="login-ribbons" aria-hidden="true">
+        <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#ADB79E" stop-opacity=".32"/>
+              <stop offset="55%" stop-color="#575C4F" stop-opacity=".16"/>
+              <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="lg2" x1="1" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#CED4C5" stop-opacity=".22"/>
+              <stop offset="60%" stop-color="#505F59" stop-opacity=".12"/>
+              <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path class="lr1" fill="url(#lg1)" d="M-200,620 C180,420 420,760 760,540 C1020,372 1240,540 1640,360 L1640,900 L-200,900 Z"/>
+          <path class="lr2" fill="url(#lg2)" d="M-200,720 C220,560 480,840 820,660 C1100,512 1300,660 1640,500 L1640,900 L-200,900 Z"/>
+          <g stroke="#ADB79E" stroke-opacity=".14" fill="none" stroke-width="1">
+            <path class="lr1" d="M-200,600 C180,400 420,740 760,520 C1020,352 1240,520 1640,340"/>
+            <path class="lr1" d="M-200,640 C180,440 420,780 760,560 C1020,392 1240,560 1640,380"/>
+          </g>
+        </svg>
+      </div>
+      <div class="login-right-text">
+        <h2>Ein Ort für Ihre Projekte, Dateien und Freigaben.</h2>
+        <p>Dateien, Feedback, Whiteboards, Abstimmungen und Freigaben – organisiert in einer zentralen Plattform für Teams und Kunden.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= SHELL ================= */
+function renderShell(){
+  const mainClass = state.view==='planning' ? 'main main-wide' : 'main';
+  return `
+  <div class="shell">
+    ${renderSidebar()}
+    <div class="${mainClass}">${renderView()}</div>
+  </div>
+  ${state.whiteboardOpen ? renderWhiteboard() : ''}
+  `;
+}
+
+function renderSidebar(){
+  const nav = [
+    {id:'dashboard', label:'Dashboard'},
+    {id:'projects', label:'Projekte'},
+    {id:'planning', label:'Planung'},
+    {id:'timetracking', label:'Zeitauswertung'},
+    {id:'tasks', label:'Aufgaben'},
+    {id:'clients', label:'Kunden'},
+    {id:'team', label:'Team'},
+    {id:'settings', label:'Einstellungen'},
+  ];
+  const activeView = state.view === 'project' ? 'projects' : state.view;
+  return `
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-name">${DATA.studio.name}</div>
+      <div class="brand-sub">Kundenportal</div>
+    </div>
+    <div class="search-input"><span>⌕</span><input placeholder="Suchen"><span class="kbd">⌘K</span></div>
+    <div class="nav">
+      ${nav.map(n=>`<div class="nav-item ${activeView===n.id?'active':''}" data-act="nav" data-val="${n.id}">${n.label}</div>`).join('')}
+    </div>
+    <div class="sidebar-spacer"></div>
+    <div class="account-widget">
+      <div class="avatar">${initials(DATA.studio.accountName)}</div>
+      <div style="flex:1; min-width:0;">
+        <div class="account-name">${DATA.studio.accountName}</div>
+        <div class="account-role">${DATA.studio.accountRole}</div>
+      </div>
+      <div class="theme-toggle" data-act="theme-toggle" title="Hell-/Dunkelmodus">${state.theme==='dark' ? '☀' : '☾'}</div>
+    </div>
+  </div>`;
+}
+
+function renderView(){
+  switch(state.view){
+    case 'dashboard': return renderDashboard();
+    case 'projects': return renderProjects();
+    case 'planning': return renderPlanning();
+    case 'timetracking': return renderTimeTracking();
+    case 'project': return renderProjectDetail();
+    case 'tasks': return renderTasksGlobal();
+    case 'clients': return renderClients();
+    case 'team': return renderTeam();
+    case 'settings': return renderSettings();
+    default: return '';
+  }
+}
+
+function renderDashboard(){
+  const activeProjects = DATA.projects.filter(p=>p.status==='Aktiv').length;
+  const openTasks = DATA.tasks.filter(t=>!t.done).length;
+  const openBoards = DATA.boards.length;
+  const today = new Date().toLocaleDateString('de-DE', { weekday:'long', day:'numeric', month:'long' });
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title" style="font-weight:300;">Guten Morgen, ${DATA.studio.accountName}</div>
+      <div class="page-meta" style="text-transform:capitalize;">${today}</div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><span class="stat-num">${activeProjects}</span><span class="stat-label">Aktive Projekte</span></div>
+    <div class="stat-card"><span class="stat-num">${openTasks}</span><span class="stat-label">Offene Aufgaben</span></div>
+    <div class="stat-card"><span class="stat-num">${openBoards}</span><span class="stat-label">Offene Planräume</span></div>
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:12px;">Neueste Aktivität</div>
+  <div class="card" style="padding:0;">
+    ${DATA.projects.map(p=>`
+      <div class="row-line" style="padding:16px 20px; cursor:pointer;" data-act="open-project" data-val="${p.id}">
+        <div>
+          <div style="font-weight:500; font-size:13.5px; margin-bottom:2px;">${p.title}</div>
+          <div class="faint" style="font-size:11.5px;">${p.address}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="faint" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;">${p.phases[p.phaseIndex]}</span>
+          <span class="badge badge-active"><span class="badge-dot"></span>${p.status}</span>
+        </div>
+      </div>`).join('')}
+    ${DATA.tasks.filter(t=>!t.done).map(t=>`
+      <div class="row-line" style="padding:16px 20px;">
+        <div>
+          <div style="font-weight:500; font-size:13.5px; margin-bottom:2px;">${t.title}</div>
+          <div class="faint" style="font-size:11.5px;">Aufgabe · ${t.date}</div>
+        </div>
+        <span class="badge badge-amber">${t.tag}</span>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+/* ================= PLANNING (Zeitachse & Teamauslastung) ================= */
+function renderPlanning(){
+  const days = planningDays();
+  const months = planningMonthGroups(days);
+  const todayCol = todayColumnIndex();
+  const rows = planningGridRowCount();
+  const dayColWidth = 24;
+  const labelColWidth = 190;
+  const gridCols = `${labelColWidth}px repeat(${PLANNING_DAYS}, minmax(${dayColWidth}px, 1fr))`;
+  const rangeLabel = `${days[0].toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})} – ${days[PLANNING_DAYS-1].toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}`;
+  // explicit column start per month group — fixes the Aug/Sep header overlap
+  // that implicit "grid-column: span N" auto-placement could produce
+  let monthCursor = 0;
+  const monthCells = months.map(mo=>{
+    const colStart = monthCursor + 2;
+    monthCursor += mo.count;
+    return `<div class="tl-head-month" style="grid-column:${colStart} / span ${mo.count};">${mo.label}</div>`;
+  }).join('');
+
+  // Utilization: how many *currently visible-window* projects each person is on
+  const utilization = DATA.team.map(m=>{
+    const assigned = DATA.projects.filter(p=>p.assignedTeam.includes(m.id) && barSpan(p.start,p.end));
+    return { member:m, projects:assigned };
+  });
+
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Planung</div>
+      <div class="page-meta">Projektzeitplan &amp; Teamauslastung · ${rangeLabel}</div>
+    </div>
+    <button class="btn btn-primary" data-act="new-project">+ Projekt einplanen</button>
+  </div>
+
+  <div class="toolbar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="btn btn-sm" data-act="planning-nav" data-val="-30">‹ Monat</span>
+      <span class="btn btn-sm" data-act="planning-nav" data-val="reset">Heute</span>
+      <span class="btn btn-sm" data-act="planning-nav" data-val="30">Monat ›</span>
+    </div>
+  </div>
+
+  <div class="card planning-card" style="padding:20px 0 22px;">
+    <div class="eyebrow" style="margin:0 22px 14px;">Projekte</div>
+    <div class="timeline-scroll">
+      <div class="timeline-grid" style="grid-template-columns:${gridCols};">
+        <div class="tl-label-cell tl-head-month tl-col-border"></div>
+        ${monthCells}
+
+        <div class="tl-label-cell tl-head tl-col-border"><span class="faint" style="font-size:11px;">${DATA.projects.length} Projekte</span></div>
+        ${days.map(d=>{
+          const wknd = d.getDay()===0 || d.getDay()===6;
+          return `<div class="tl-head ${wknd?'wknd':''}">${d.getDate()}</div>`;
+        }).join('')}
+
+        ${todayCol!==null ? `<div class="tl-today" style="grid-column:${todayCol+2}; grid-row:1 / span ${rows};"><span class="tl-today-label">Heute</span></div>` : ''}
+        ${days.map((d,i)=>`<div class="tl-daygrid" style="grid-column:${i+2}; grid-row:2 / span ${rows-1};"></div>`).join('')}
+        ${days.map((d,i)=> (d.getDay()===0||d.getDay()===6) ? `<div class="tl-weekend" style="grid-column:${i+2}; grid-row:2 / span ${rows-1};"></div>` : '').join('')}
+
+        ${DATA.projects.map(p=>{
+          const span = barSpan(p.start, p.end);
+          const expanded = state.planningExpanded === p.id;
+          return `
+          <div class="tl-label-cell tl-col-border">
+            <div class="tl-proj-name" data-act="toggle-planning-project" data-val="${p.id}">${p.number} · ${p.title.split('·')[1]||p.title}</div>
+            <div class="tl-avatars">
+              ${p.assignedTeam.map(mid=>{
+                const m = DATA.team.find(t=>t.id===mid); if(!m) return '';
+                return `<span class="tl-mini-avatar" title="${m.name}">${initials(m.name)}</span>`;
+              }).join('')}
+              <span class="tl-add-member" data-act="toggle-planning-project" data-val="${p.id}" title="Mitarbeiter verwalten">+</span>
+            </div>
+          </div>
+          ${span ? `<div class="tl-bar" style="grid-column:${span.colStart} / ${span.colEnd}; ${span.clippedStart?'border-top-left-radius:0;border-bottom-left-radius:0;':''} ${span.clippedEnd?'border-top-right-radius:0;border-bottom-right-radius:0;':''}" title="Bearbeitungsstand: ${p.phases[p.phaseIndex]}">
+            <div class="tl-bar-segments">
+              ${p.phases.map((ph,i)=>`<div class="tl-seg ${i<p.phaseIndex?'done':''} ${i===p.phaseIndex?'current':''}" title="${ph}"></div>`).join('')}
+            </div>
+            <span class="tl-bar-label">${p.phases[p.phaseIndex]}</span>
+          </div>` : `<div></div>`}
+          ${expanded ? `<div class="tl-assign-row" style="grid-column:1 / span ${PLANNING_DAYS+1};">
+            <span class="faint" style="font-size:11.5px; margin-right:4px;">Team:</span>
+            ${DATA.team.map(m=>`
+              <span class="assign-chip ${p.assignedTeam.includes(m.id)?'on':''}" data-act="toggle-assign" data-proj="${p.id}" data-member="${m.id}">
+                ${initials(m.name)} · ${m.name}${p.assignedTeam.includes(m.id) ? ' ×' : ''}
+              </span>`).join('')}
+          </div>` : ''}
+          `;
+        }).join('')}
+
+        <div class="tl-label-cell tl-col-border tl-add-row" data-act="new-project">+ Neues Projekt</div>
+        <div style="grid-column:2 / span ${PLANNING_DAYS};"></div>
+      </div>
+    </div>
+    <div class="faint" style="font-size:11px; margin:10px 22px 0;">Klick auf einen Projektnamen oder das „+" öffnet die Mitarbeiter-Zuordnung. Links in der Spalte lassen sich neue Projekte eintragen.</div>
+  </div>
+
+  <div class="eyebrow" style="margin:24px 0 12px;">Teamauslastung</div>
+  <div class="card" style="padding:0;">
+    ${utilization.map(u=>{
+      const count = u.projects.length;
+      const pct = Math.min(100, (count/3)*100);
+      const over = count>=3;
+      return `
+      <div class="row-line" style="padding:16px 22px; align-items:flex-start;">
+        <div style="display:flex; align-items:center; gap:12px; min-width:170px;">
+          <div class="avatar">${initials(u.member.name)}</div>
+          <div>
+            <div style="font-weight:500; font-size:13px;">${u.member.name}</div>
+            <div class="faint" style="font-size:11px;">${u.member.role}</div>
+          </div>
+        </div>
+        <div style="flex:1; margin:0 18px;">
+          <div class="util-bar"><div class="util-fill ${over?'over':''}" style="width:${pct}%;"></div></div>
+        </div>
+        <div style="text-align:right; min-width:140px;">
+          <div style="font-size:12.5px; font-weight:500; ${over?'color:var(--accent-text);':''}">${count} ${count===1?'Projekt':'Projekte'}${over?' · hoch ausgelastet':''}</div>
+          <div class="faint" style="font-size:11px;">${u.projects.map(p=>p.number).join(', ')||'—'}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  </div>
+  `;
+}
+
+/* ================= TIME TRACKING (Zeitauswertung) ================= */
+function renderTimeTracking(){
+  const me = currentMember();
+  const isAdmin = DATA.studio.accountRole === 'Admin';
+  const viewMember = DATA.team.find(m=>m.id===state.ttViewMemberId) || me;
+  const stats = memberTimeStats(viewMember);
+  const recentEntries = stats.entries.slice().sort((a,b)=> b.date.localeCompare(a.date)).slice(0,8);
+  const weekdaysSoFar = countWeekdays(TT_MONTH_PREFIX+'-01', TT_TODAY);
+
+  const projectName = (id)=>{
+    if(!id) return 'Allgemein';
+    const p = DATA.projects.find(p=>p.id===id);
+    return p ? (p.number+' · '+(p.title.split('·')[1]||p.title)) : 'Allgemein';
+  };
+
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Zeitauswertung</div>
+      <div class="page-meta">August 2026 · ${weekdaysSoFar} Arbeitstage bis heute</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="eyebrow" style="margin-bottom:14px;">Zeit erfassen</div>
+    <div class="tt-form-row">
+      <div class="field"><label>Mitarbeiter</label>
+        <select id="teMember">${DATA.team.map(m=>`<option value="${m.id}" ${m.id===viewMember.id?'selected':''}>${m.name}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Datum</label><input type="date" id="teDate" value="${TT_TODAY}"></div>
+      <div class="field"><label>Projekt</label>
+        <select id="teProject"><option value="">Allgemein</option>${DATA.projects.map(p=>`<option value="${p.id}">${p.number} · ${p.title.split('·')[1]||p.title}</option>`).join('')}</select>
+      </div>
+      <div class="field" style="max-width:100px;"><label>Stunden</label><input type="number" id="teHours" min="0.5" step="0.5" value="8"></div>
+      <div class="field" style="flex:1;"><label>Notiz</label><input type="text" id="teNote" placeholder="Was wurde gemacht?"></div>
+      <button class="btn btn-primary" data-act="tt-add-time" style="align-self:flex-end;">Erfassen</button>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <span class="btn btn-sm" data-act="tt-add-absence" data-val="urlaub">+ Urlaubstag heute</span>
+      <span class="btn btn-sm" data-act="tt-add-absence" data-val="krankheit">+ Krankheitstag heute</span>
+    </div>
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:12px;">${viewMember.id===me.id ? 'Meine Auswertung' : 'Auswertung — '+viewMember.name}${isAdmin && viewMember.id!==me.id ? ` <span class="faint" style="text-transform:none; letter-spacing:0; cursor:pointer; text-decoration:underline;" data-act="tt-view-member" data-val="${me.id}">(zurück zu meiner)</span>`:''}</div>
+  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:20px;">
+    <div class="stat-card"><span class="stat-num">${fmtHours(stats.ist)} / ${fmtHours(stats.soll)}</span><span class="stat-label">Stunden Ist / Soll (Monat)</span></div>
+    <div class="stat-card"><span class="stat-num" style="${stats.saldo<0?'color:#c0654a;':''}">${stats.saldo>=0?'+':''}${fmtHours(stats.saldo)}</span><span class="stat-label">Saldo (Über-/Minusstunden)</span></div>
+    <div class="stat-card"><span class="stat-num">${stats.urlaubRest}</span><span class="stat-label">Urlaubstage Rest (von ${viewMember.vacationDaysPerYear})</span></div>
+    <div class="stat-card"><span class="stat-num">${stats.krankheitstage}</span><span class="stat-label">Krankheitstage 2026</span></div>
+  </div>
+
+  <div class="card" style="padding:0; margin-bottom:24px;">
+    <div class="eyebrow" style="margin:18px 20px 4px;">Letzte Einträge</div>
+    ${recentEntries.length===0 ? `<div class="muted" style="padding:14px 20px 20px;">Noch keine Zeiten erfasst.</div>` :
+      recentEntries.map(e=>`
+      <div class="row-line" style="padding:12px 20px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="faint" style="font-size:11.5px; min-width:70px;">${new Date(e.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}</span>
+          <span style="font-size:13px;">${projectName(e.projectId)}</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="faint" style="font-size:12px;">${e.note||''}</span>
+          <span style="font-weight:500; font-size:13px;">${fmtHours(e.hours)} h</span>
+        </div>
+      </div>`).join('')}
+  </div>
+
+  ${isAdmin ? `
+  <div class="eyebrow" style="margin-bottom:12px;">Team-Übersicht</div>
+  <div class="card" style="padding:0; margin-bottom:24px;">
+    ${DATA.team.map(m=>{
+      const s = memberTimeStats(m);
+      return `
+      <div class="row-line" style="padding:14px 20px; cursor:pointer; ${m.id===viewMember.id?'background:rgba(173,183,158,.08);':''}" data-act="tt-view-member" data-val="${m.id}">
+        <div style="display:flex; align-items:center; gap:12px; min-width:190px;">
+          <div class="avatar">${initials(m.name)}</div>
+          <div>
+            <div style="font-weight:500; font-size:13px;">${m.name}</div>
+            <div class="faint" style="font-size:11px;">${m.role} · ${m.weeklyHours}h/Woche</div>
+          </div>
+        </div>
+        <div style="text-align:right; font-size:12.5px;">${fmtHours(s.ist)} / ${fmtHours(s.soll)} h</div>
+        <div style="text-align:right; font-size:12.5px; ${s.saldo<0?'color:#c0654a;':'color:var(--accent-text);'} min-width:70px;">${s.saldo>=0?'+':''}${fmtHours(s.saldo)} h</div>
+        <div style="text-align:right; font-size:12.5px; min-width:90px;">${s.urlaubRest} Urlaub Rest</div>
+        <div style="text-align:right; font-size:12.5px; min-width:100px;">${s.krankheitstage} Krankheitstage</div>
+      </div>`;
+    }).join('')}
+  </div>
+
+  <div class="eyebrow" style="margin-bottom:12px;">Stunden pro Projekt</div>
+  <div class="card" style="padding:0;">
+    ${DATA.projects.map(p=>{
+      const ph = projectHoursStats(p);
+      const over = ph.budget>0 && ph.logged>ph.budget;
+      return `
+      <div class="row-line" style="padding:14px 20px; align-items:center;">
+        <div style="min-width:220px;">
+          <div style="font-weight:500; font-size:13px;">${p.number} · ${p.title.split('·')[1]||p.title}</div>
+        </div>
+        <div style="flex:1; margin:0 18px;">
+          <div class="util-bar"><div class="util-fill ${over?'over':''}" style="width:${ph.pct}%;"></div></div>
+        </div>
+        <div style="text-align:right; min-width:140px; font-size:12.5px; ${over?'color:#c0654a; font-weight:500;':''}">${fmtHours(ph.logged)} / ${ph.budget?fmtHours(ph.budget):'—'} h</div>
+      </div>`;
+    }).join('')}
+  </div>
+  ` : ''}
+  `;
+}
+
+/* ================= PROJECTS LIST ================= */
+function renderProjects(){
+  const active = DATA.projects.filter(p=>p.status==='Aktiv').length;
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Projekte</div>
+      <div class="page-meta">${DATA.projects.length} Projekte · ${active} in Arbeit</div>
+    </div>
+    <button class="btn btn-primary" data-act="new-project">+ Projekt anlegen</button>
+  </div>
+  <div class="toolbar">
+    <div class="pill-tabs">
+      ${['Alle','Anfrage','Aktiv','Pausiert','Abgeschlossen','Archiviert'].map((t,i)=>`<div class="pill-tab ${i===0?'active':''}">${t}</div>`).join('')}
+    </div>
+    <div class="search-input" style="width:220px;"><span>⌕</span><input placeholder="Projekte durchsuchen …"></div>
+  </div>
+  ${DATA.projects.map(p=>{
+    const pct = (p.phaseIndex/(p.phases.length-1))*100;
+    return `
+    <div class="project-card" data-act="open-project" data-val="${p.id}">
+      <div class="project-card-top">
+        <div class="eyebrow">${p.date}</div>
+        <span class="badge badge-active"><span class="badge-dot"></span>${p.status}</span>
+      </div>
+      <div class="project-title">${p.title}</div>
+      <div class="project-sub">${p.address} · Betreut von ${DATA.studio.accountName}</div>
+      <div class="ruler"><div class="ruler-fill" style="width:${pct}%"></div><div class="ruler-dot" style="left:${pct}%"></div></div>
+      <div class="project-phase-row">
+        <div class="project-phase-label">${p.phases[p.phaseIndex]}</div>
+        <div class="faint" style="font-size:11.5px;">${p.phaseIndex+1} / ${p.phases.length}</div>
+      </div>
+    </div>`;
+  }).join('')}
+  `;
+}
+
+/* ================= PROJECT DETAIL ================= */
+function currentProject(){ return DATA.projects.find(p=>p.id===state.projectId); }
+
+function renderProjectDetail(){
+  const p = currentProject();
+  const tabs = [
+    {id:'overview', label:'Übersicht'},
+    {id:'tasks', label:'Aufgaben'},
+    {id:'files', label:'Dateien'},
+    {id:'messages', label:'Nachrichten'},
+    {id:'planraum', label:'Whiteboard'},
+    {id:'details', label:'Projektdetails'},
+  ];
+  return `
+  <div class="breadcrumb"><span data-act="nav" data-val="projects">Projekte</span> / ${p.title}</div>
+  <div class="detail-header">
+    <div>
+      <div class="page-title">${p.title}</div>
+      <div class="page-meta">${p.typeLine} · ${p.address}</div>
+    </div>
+    <div class="status-meta">
+      <div class="status-meta-item"><div class="eyebrow">Status</div><span class="badge badge-active"><span class="badge-dot"></span>${p.status}</span></div>
+      <div class="status-meta-item"><div class="eyebrow">Phase</div><div style="font-weight:500;">${p.phases[p.phaseIndex]}</div></div>
+    </div>
+  </div>
+  <div class="tabbar">
+    ${tabs.map(t=>`<div class="tabbar-item ${state.projectTab===t.id?'active':''}" data-act="project-tab" data-val="${t.id}">${t.label}</div>`).join('')}
+  </div>
+  ${renderProjectTabContent(p)}
+  `;
+}
+
+function renderProjectTabContent(p){
+  if(state.projectTab==='overview') return renderTabOverview(p);
+  if(state.projectTab==='tasks') return renderTabTasks(p);
+  if(state.projectTab==='files') return renderTabFiles(p);
+  if(state.projectTab==='messages') return renderTabMessages(p);
+  if(state.projectTab==='planraum') return renderTabPlanraum(p);
+  if(state.projectTab==='details') return renderTabDetails(p);
+  return '';
+}
+
+function renderTabOverview(p){
+  const pct = (p.phaseIndex/(p.phases.length-1))*100;
+  return `
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="eyebrow" style="font-size:11px; text-transform:none; letter-spacing:0; font-weight:500; color:var(--text);">Wo stehen wir?</div>
+      <span class="faint" style="cursor:pointer;">✎</span>
+    </div>
+    <div class="ruler" style="margin-top:16px;"><div class="ruler-fill" style="width:${pct}%"></div><div class="ruler-dot" style="left:${pct}%"></div></div>
+    <div style="display:flex; justify-content:space-between; margin-top:6px;">
+      ${p.phases.map((ph,i)=>`<div style="font-size:10px; text-transform:uppercase; letter-spacing:.05em; font-weight:${i===p.phaseIndex?'700':'500'}; color:${i===p.phaseIndex?'var(--accent-text)':'var(--text-faint)'};">${ph}</div>`).join('')}
+    </div>
+    <div class="faint" style="font-size:11px; margin-top:6px;">${p.date}</div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div style="font-weight:500; font-size:14px; margin-bottom:12px;">Was wird von Ihnen benötigt?</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface-warm); border-radius:var(--radius-sm); padding:12px 14px;">
+        <span style="font-size:13px; color:var(--moss);">Noch keine Unterlagen vom Kunden eingereicht</span>
+        <span style="color:var(--ink-soft); font-weight:500; font-size:13px; cursor:pointer; text-decoration:underline;" data-act="project-tab" data-val="files">Dateien</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:500; font-size:14px; margin-bottom:8px;">Projektstatus</div>
+      <div class="row-line"><span class="muted">Status</span><span class="badge badge-active"><span class="badge-dot"></span>${p.status}</span></div>
+      <div class="row-line"><span class="muted">Projektphasen</span><span style="font-weight:500;">${p.phases[p.phaseIndex]}</span></div>
+      <div class="row-line"><span class="muted">Nächster Meilenstein</span><span class="faint">—</span></div>
+      <div class="row-line"><span class="muted">Angebot</span><span class="faint">—</span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div style="font-weight:500; font-size:14px;">Zeiterfassung</div>
+      <span style="color:var(--accent-text); font-weight:500; font-size:12.5px; cursor:pointer; text-decoration:underline;" data-act="nav" data-val="timetracking">Zur Zeitauswertung</span>
+    </div>
+    ${(()=>{ const h = projectHoursStats(p); const over = h.budget>0 && h.logged>h.budget; return `
+    <div class="util-bar" style="height:8px;"><div class="util-fill ${over?'over':''}" style="width:${h.pct}%;"></div></div>
+    <div style="display:flex; justify-content:space-between; margin-top:8px;">
+      <span class="faint" style="font-size:11.5px;">${fmtHours(h.logged)} h erfasst</span>
+      <span class="faint" style="font-size:11.5px; ${over?'color:#c0654a;':''}">von ${h.budget?fmtHours(h.budget):'—'} h geplant</span>
+    </div>`; })()}
+  </div>
+  `;
+}
+
+function renderTabTasks(p){
+  const tasks = DATA.tasks.filter(t=>t.project===p.title);
+  return `
+  <div class="card">
+    <div style="font-weight:500; font-size:14px; margin-bottom:3px;">Aufgaben</div>
+    <p class="muted" style="font-size:12.5px; margin-bottom:14px;">Offene Punkte, die das Team im Projekt führt.</p>
+    ${tasks.length===0 ? `<div class="muted" style="padding:10px 0;">Keine Aufgaben in diesem Projekt.</div>` :
+      tasks.map(t=>`<div class="row-line"><span>${t.title}</span><span class="badge badge-amber">${t.tag}</span></div>`).join('')}
+    <button class="btn btn-primary" style="margin-top:14px;" data-act="new-task-project">Neue Aufgabe</button>
+  </div>
+  `;
+}
+
+function fileSection(label, key, tag){
+  const items = DATA.files[key];
+  return `
+  <div class="file-section">
+    <div class="file-section-head">
+      <div>
+        <div class="eyebrow">${label} ${items.length}</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        ${tag ? `<span class="faint" style="font-size:10px; text-transform:uppercase; letter-spacing:.05em; border:1px solid var(--border-strong); padding:3px 7px; border-radius:4px;">${tag}</span>` : ''}
+        <button class="btn btn-primary btn-sm">Datei hochladen</button>
+      </div>
+    </div>
+    ${items.length===0
+      ? `<div class="dropzone">Zum Hochladen hier ablegen</div>`
+      : `<div class="file-grid">${items.map(f=>`
+          <div class="file-thumb">
+            <div class="file-thumb-img">▨</div>
+            <div class="file-thumb-meta"><div><div class="file-thumb-name">${f.name}</div><div class="file-thumb-size">JPG · ${f.size}</div></div></div>
+          </div>`).join('')}</div>`}
+  </div>`;
+}
+
+function renderTabFiles(p){
+  return `
+  <div class="card">
+    <div style="font-weight:500; font-size:15px;">Renderings &amp; Dateien</div>
+    <p class="muted" style="font-size:12.5px; margin-bottom:18px;">Neue Dateien hochladen — für alle im Projekt sichtbar.</p>
+    ${fileSection('Ihre Unterlagen','unterlagen', null)}
+    ${fileSection('Vorabzüge im Weißmodell','weissmodell', 'Nur Studio')}
+    ${fileSection('Review','review', 'Nur Studio')}
+    ${fileSection('Whiteboard','planraum', null)}
+  </div>
+  `;
+}
+
+function renderTabMessages(p){
+  return `
+  <div class="card">
+    <div style="font-weight:500; font-size:14px; margin-bottom:3px;">Nachrichten</div>
+    <p class="muted" style="font-size:12.5px; margin-bottom:14px;">Abstimmung zwischen Kunde und Team — im Projekt dokumentiert.</p>
+    <div class="msg-box">
+      <textarea placeholder="Nachricht an das Projektteam …"></textarea>
+      <button class="btn" disabled>Senden</button>
+    </div>
+  </div>
+  `;
+}
+
+function renderTabPlanraum(p){
+  return `
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+      <div>
+        <div style="font-weight:500; font-size:14px;">Whiteboard</div>
+        <p class="muted" style="font-size:12.5px;">Ein gemeinsames Board für Renderings, Notizen und Markierungen — alle im Raum sehen Änderungen live.</p>
+      </div>
+      <button class="btn btn-primary">Board anlegen</button>
+    </div>
+    ${DATA.boards.map(b=>`
+      <div class="board-row" data-act="open-board" data-val="${b.id}">
+        <div class="project-title" style="font-size:13.5px; margin:0;">${b.name}</div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="faint" style="font-size:12px;">${b.date}</span>
+          <span class="btn btn-sm">Gastlinks</span>
+        </div>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+function renderTabDetails(p){
+  return `
+  <div class="card" style="margin-bottom:16px; text-align:center; padding:32px;">
+    <div class="eyebrow">Angebot</div>
+    <div style="font-weight:500; font-size:16px; margin:6px 0 4px;">Noch kein Angebot</div>
+    <div class="muted" style="font-size:12.5px;">Sobald das Studio ein Angebot verschickt, steht es hier.</div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div style="font-weight:500; font-size:14px;">Angebot anhängen</div>
+    <p class="muted" style="font-size:12.5px; margin-bottom:14px;">Nur PDF. Sobald der Upload fertig ist, steht es hier als aktuelles Angebot.</p>
+    <div class="field" style="max-width:280px; margin-bottom:12px;">
+      <label>Angebotsnummer</label>
+      <input type="text" placeholder="">
+      <span class="faint" style="font-size:11px;">Optional — steht später auf dem Angebot.</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <button class="btn btn-primary">Angebot hinzufügen</button>
+      <span class="faint" style="font-size:11.5px; text-transform:uppercase; letter-spacing:.04em;">oder PDF hier ablegen</span>
+    </div>
+    <div style="margin-top:14px;"><span style="color:var(--accent-text); font-weight:500; font-size:13px; cursor:pointer;">Anfrage öffnen</span></div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <div>
+        <div style="font-weight:500; font-size:14px;">Ausstattung &amp; Materialien</div>
+        <p class="muted" style="font-size:12.5px;">Vom Studio gepflegte Angaben zum Projekt.</p>
+      </div>
+      <button class="btn btn-sm">Angabe hinzufügen</button>
+    </div>
+    <div class="muted" style="padding:8px 0 0;">Noch keine Angaben.</div>
+  </div>
+  <div class="card">
+    <div style="font-weight:500; font-size:14px; margin-bottom:8px;">Eckdaten</div>
+    <div class="row-line"><span class="muted">Adresse</span><span>${p.address}</span></div>
+    <div class="row-line"><span class="muted">Zuständig</span><span>${DATA.studio.accountName}</span></div>
+    <div class="row-line"><span class="muted">Angelegt</span><span>${p.date}</span></div>
+  </div>
+  `;
+}
+
+/* ================= WHITEBOARD (Planraum board) ================= */
+function renderWhiteboard(){
+  const stickies = [
+    { type:'change', text:'Fassade nach Norden abdunkeln', left:480, top:60 },
+    { type:'change', text:'Kamera 01 näher an Eingang', left:480, top:170 },
+    { type:'note', text:'Hallo — sieht schon sehr gut aus!', left:480, top:280 },
+  ];
+  const chat = [
+    { who: DATA.studio.accountName, time:'09:11', text:'Weiter nach Rendering-Freigabe' },
+    { who: DATA.studio.accountName, time:'09:12', text:'Kamera 01' },
+    { who:'Team-Mitglied A', time:'09:14', text:'Guten Morgen 👋' },
+    { who:'Team-Mitglied B', time:'09:20', text:'Test' },
+  ];
+  return `
+  <div class="whiteboard">
+    <div class="wb-toolbar">
+      <button class="btn btn-sm" data-act="close-board">← Zurück</button>
+      ${['Text','Stift','Markierungen','Rahmen'].map(t=>`<span class="btn btn-sm">${t}</span>`).join('')}
+      <div style="flex:1;"></div>
+      <span class="btn btn-sm" style="opacity:.5;">Rückgängig</span>
+    </div>
+    <div class="wb-body">
+      <div class="wb-canvas">
+        <div class="wb-render">
+          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=900&auto=format&fit=crop" alt="Rendering">
+        </div>
+        <div class="pin" style="left:100px; top:120px;"></div>
+        <div class="pin" style="left:220px; top:90px;"></div>
+        ${stickies.map(s=>`
+          <div class="sticky sticky-${s.type}" draggable="true" data-drag-text="${s.text.replace(/"/g,'&quot;')}" style="left:${s.left}px; top:${s.top}px;">
+            <div class="sticky-label">${s.type==='change'?'Änderung':'Notiz'}</div>${s.text}
+          </div>`).join('')}
+      </div>
+      <div class="wb-chat">
+        <div class="eyebrow" style="margin-bottom:12px;">Chat</div>
+        ${chat.map(m=>`
+          <div class="wb-chat-msg" draggable="true" data-drag-text="${m.text.replace(/"/g,'&quot;')}">
+            <span class="who">${m.who}</span><span class="time">${m.time}</span><div class="txt">${m.text}</div>
+          </div>`).join('')}
+        <div class="wb-drop-zone" id="wbTaskDrop">
+          <span class="wb-drop-icon">↳</span>
+          <span class="wb-drop-text">Notiz oder Änderungswunsch hierher ziehen, um sie als Aufgabe ins Projekt zu übernehmen</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+/* ================= TASKS (global) ================= */
+function renderTasksGlobal(){
+  const open = DATA.tasks.filter(t=>!t.done);
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Aufgaben</div>
+      <div class="page-meta">${DATA.tasks.length} Aufgabe · ${open.length} offen</div>
+    </div>
+  </div>
+  <div class="tabbar"><div class="tabbar-item active">Aufgaben</div><div class="tabbar-item">Aktivität</div></div>
+  <div class="toolbar">
+    <div class="pill-tabs">
+      ${['Offen','Erledigt','Alle'].map((t,i)=>`<div class="pill-tab ${i===0?'active':''}">${t}</div>`).join('')}
+    </div>
+    <div class="search-input" style="width:220px;"><span>⌕</span><input placeholder="Aufgaben durchsuchen …"></div>
+  </div>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="display:flex; gap:10px; padding:14px 18px; border-bottom:1px solid var(--border);">
+      <input id="newTaskInput" style="flex:1; border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:9px 12px;" placeholder="Neue Aufgabe …">
+      <select id="newTaskProjectSelect" style="border:1px solid var(--border-strong); border-radius:var(--radius-sm); padding:9px 10px; background-color:var(--bg); color:var(--text);"><option>Kein Projekt</option>${DATA.projects.map(p=>`<option>${p.title}</option>`).join('')}</select>
+      <button class="btn btn-primary" data-act="add-task">Hinzufügen</button>
+    </div>
+    ${DATA.tasks.map(t=>`
+      <div class="row-line" style="padding:14px 18px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:var(--accent); display:inline-block;"></span>
+          <div>
+            <div style="font-weight:500;">${t.title}</div>
+            <div class="faint" style="font-size:11.5px;">${t.project}</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="badge badge-amber">${t.tag}</span>
+          <span class="faint" style="font-size:11.5px;">${t.date}</span>
+        </div>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+/* ================= CLIENTS ================= */
+function renderClients(){
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Kunden</div>
+      <div class="page-meta">${DATA.clients.length} Kunden</div>
+    </div>
+    <button class="btn btn-primary">+ Kunde einladen</button>
+  </div>
+  <div class="toolbar">
+    <div class="pill-tabs">${['Alle','Aktiv','Eingeladen'].map((t,i)=>`<div class="pill-tab ${i===0?'active':''}">${t}</div>`).join('')}</div>
+    <div class="search-input" style="width:220px;"><span>⌕</span><input placeholder="Suchen — Name oder E-Mail"></div>
+  </div>
+  <div class="card" style="padding:0;">
+    ${DATA.clients.map(c=>`
+      <div class="row-line" style="padding:14px 18px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="avatar" style="background:var(--surface-warm); color:var(--ink-soft); border:1px solid var(--border);">${c.email[0].toUpperCase()}</div>
+          <div>
+            <div style="font-weight:500;">${c.email}</div>
+            <div class="faint" style="font-size:11.5px;">gültig bis ${c.validUntil}</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="badge badge-amber">${c.status}</span>
+          <span class="btn btn-sm">Link anzeigen</span>
+          <span class="btn btn-sm">Zurückziehen</span>
+        </div>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+/* ================= TEAM ================= */
+function renderTeam(){
+  return `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Team</div>
+      <div class="page-meta">${DATA.team.length} Mitglieder</div>
+    </div>
+    <button class="btn btn-primary">+ Mitarbeiter hinzufügen</button>
+  </div>
+  <div class="toolbar">
+    <div class="pill-tabs">${['Alle','Admins','Mitarbeiter','Eingeladen'].map((t,i)=>`<div class="pill-tab ${i===0?'active':''}">${t}</div>`).join('')}</div>
+    <div class="search-input" style="width:220px;"><span>⌕</span><input placeholder="Suchen — Name oder E-Mail"></div>
+  </div>
+  <div class="card" style="padding:0;">
+    ${DATA.team.map(m=>`
+      <div class="row-line" style="padding:14px 18px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="avatar">${initials(m.name)}</div>
+          <div>
+            <div style="font-weight:500;">${m.name}</div>
+            <div class="faint" style="font-size:11.5px;">${m.email}</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="faint" style="font-size:11.5px;">seit ${m.since}</span>
+          <span class="badge ${m.role==='Admin'?'badge-dark':'badge-outline'}">${m.role==='Team'?'<span class="badge-dot"></span>':''}${m.role}</span>
+          <span class="faint">›</span>
+        </div>
+      </div>`).join('')}
+  </div>
+  `;
+}
+
+/* ================= SETTINGS ================= */
+function renderSettings(){
+  const lk = DATA.leistungskatalog;
+  return `
+  <div class="page-header"><div class="page-title">Einstellungen</div></div>
+
+  <div class="settings-block">
+    <h3>Studioprofil</h3>
+    <p class="muted">Name und Logo erscheinen im Portal, in E-Mails und auf Share-Links.</p>
+    <div class="field" style="max-width:340px; margin-bottom:14px;">
+      <label>Studioname</label>
+      <input type="text" value="${DATA.studio.name}">
+    </div>
+    <div class="field" style="max-width:200px;">
+      <label>Logo-Kürzel (2–3 Zeichen)</label>
+      <input type="text" value="${DATA.studio.logo}">
+    </div>
+    <p class="faint" style="font-size:11.5px; margin-top:12px;">Änderungen gelten sofort für alle Nutzer dieses Portals.</p>
+  </div>
+
+  <div class="settings-block">
+    <h3>App-Icon</h3>
+    <p class="muted">Ersetzt das oneplaze-Icon im Browser-Tab, auf dem Homescreen und in Link-Vorschauen.</p>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="width:44px; height:44px; border-radius:10px; background:var(--fill-strong); display:flex; align-items:center; justify-content:center; color:var(--fill-strong-text);">▢</div>
+      <div style="flex:1;">
+        <div style="font-weight:500; font-size:13px;">oneplaze-Standardicon</div>
+        <div class="faint" style="font-size:11.5px;">Quadratisches PNG, mindestens 64 × 64 px, höchstens 128 KB.</div>
+      </div>
+      <button class="btn">Icon hochladen</button>
+    </div>
+  </div>
+
+  <div class="settings-block">
+    <h3>Erscheinungsbild</h3>
+    <p class="muted">Akzentfarbe Ihres Studios — gilt sofort für alle.</p>
+    <div class="accent-mode-grid">
+      <div class="accent-mode-card ${state.accentMode==='system'?'active':''}" data-act="accent-mode" data-val="system">
+        <span class="accent-mode-dot" style="background:${ACCENTS.sage.hex};"></span>
+        <div>
+          <div class="accent-mode-title">Oneplaze Standard</div>
+          <div class="faint" style="font-size:11.5px;">Sage — die Systemfarbe</div>
+        </div>
+      </div>
+      <div class="accent-mode-card ${state.accentMode==='custom'?'active':''}" data-act="accent-mode" data-val="custom">
+        <span class="accent-mode-dot" style="background:${state.customAccentHex};"></span>
+        <div>
+          <div class="accent-mode-title">Eigene Farbe</div>
+          <div class="faint" style="font-size:11.5px;">Ihr eigenes Branding</div>
+        </div>
+      </div>
+    </div>
+    ${state.accentMode==='custom' ? `
+    <div class="custom-color-row">
+      <input type="color" id="customAccentColor" value="${state.customAccentHex}">
+      <input type="text" id="customAccentHex" value="${state.customAccentHex}" maxlength="7" spellcheck="false">
+      <span class="faint" style="font-size:11.5px;">Beliebiger Hex-Wert, passend zu Ihrem eigenen Markenauftritt (Brand Guidelines §08).</span>
+    </div>` : ''}
+    <div class="eyebrow" style="margin:24px 0 12px;">Typografie</div>
+    <div class="swatches">
+      ${Object.entries(FONTS).map(([key,f])=>`
+        <div class="swatch font-swatch ${state.font===key?'active':''}" data-act="font" data-val="${key}" style="font-family:${f.family};">
+          ${f.label}
+        </div>`).join('')}
+    </div>
+    <p class="faint" style="font-size:11.5px; margin-top:10px;">Drei freigegebene Schriftfamilien — kein freier Upload (Brand Guidelines §08).</p>
+  </div>
+
+  <div class="settings-block">
+    <h3>Leistungskatalog</h3>
+    <p class="muted">Gebäudetypen und Leistungen, die im Anfrage-Konfigurator angeboten werden. Die Preise sind Richtwerte, die Kunden sehen.</p>
+    <div class="eyebrow" style="margin-bottom:8px;">Gebäudetypen</div>
+    <table class="kv-table" style="margin-bottom:20px;">
+      ${lk.gebaeudetypen.map(g=>`
+        <tr>
+          <td style="width:44%;"><input type="text" value="${g.name}"></td>
+          <td style="width:16%;"><input type="text" value="${g.price ?? ''}" placeholder="Preis"></td>
+          <td style="width:10%;"><input type="text" value="${g.days ?? ''}" placeholder="Tage"></td>
+          <td style="width:12%;"><label class="chk"><input type="checkbox" ${g.active?'checked':''}> Aktiv</label></td>
+          <td style="width:18%;"><button class="btn btn-sm">Speichern</button></td>
+        </tr>`).join('')}
+    </table>
+    <div class="eyebrow" style="margin-bottom:8px;">Leistungen</div>
+    <table class="kv-table">
+      ${lk.leistungen.map(l=>`
+        <tr>
+          <td style="width:38%;"><input type="text" value="${l.name}"></td>
+          <td style="width:14%;"><input type="text" value="${l.price}"></td>
+          <td style="width:14%;"><select><option ${l.type==='from'?'selected':''}>from</option><option ${l.type==='fixed'?'selected':''}>fixed</option><option ${l.type==='monthly'?'selected':''}>monthly</option></select></td>
+          <td style="width:10%;"><input type="text" value="${l.days ?? ''}" placeholder="Tage"></td>
+          <td style="width:10%;"><label class="chk"><input type="checkbox" ${l.active?'checked':''}> Aktiv</label></td>
+          <td style="width:14%;"><button class="btn btn-sm">Speichern</button></td>
+        </tr>`).join('')}
+    </table>
+    <button class="btn" style="margin-top:12px;">Eintrag hinzufügen</button>
+  </div>
+  `;
+}
+
+/* ================= EVENTS ================= */
+function bindEvents(){
+  document.querySelectorAll('[data-act]').forEach(el=>{
+    el.addEventListener('click', onAction);
+  });
+  const le = document.getElementById('loginEmail');
+  const lp = document.getElementById('loginPassword');
+  if(le) le.addEventListener('input', e=>state.loginEmail=e.target.value);
+  if(lp) lp.addEventListener('input', e=>state.loginPassword=e.target.value);
+  const nt = document.getElementById('newTaskInput');
+  if(nt) nt.addEventListener('input', e=>state.newTaskText=e.target.value);
+
+  const cc = document.getElementById('customAccentColor');
+  const ch = document.getElementById('customAccentHex');
+  if(cc) cc.addEventListener('input', e=>{ state.customAccentHex = e.target.value; render(); });
+  if(ch) ch.addEventListener('change', e=>{
+    let v = e.target.value.trim();
+    if(v && !v.startsWith('#')) v = '#'+v;
+    if(/^#[0-9a-fA-F]{6}$/.test(v)){ state.customAccentHex = v; render(); }
+    else { e.target.value = state.customAccentHex; }
+  });
+
+  if(!state.authed && le && lp){
+    stopLoginDemo();
+    const cancel = ()=>stopLoginDemo(true);
+    le.addEventListener('focus', cancel, {once:true});
+    lp.addEventListener('focus', cancel, {once:true});
+    startLoginDemo(le, lp);
+  }
+
+  if(state.whiteboardOpen){
+    document.querySelectorAll('[data-drag-text]').forEach(el=>{
+      el.addEventListener('dragstart', e=>{
+        e.dataTransfer.setData('text/plain', el.dataset.dragText);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+    });
+    const dropZone = document.getElementById('wbTaskDrop');
+    if(dropZone){
+      dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('drag-over'); });
+      dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag-over'));
+      dropZone.addEventListener('drop', e=>{
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const text = e.dataTransfer.getData('text/plain');
+        if(text){
+          const p = currentProject();
+          DATA.tasks.unshift({ id:'t'+Date.now(), title:text, tag:'Aus Whiteboard', project:p.title, date:'gerade eben', done:false });
+          dropZone.classList.add('drag-success');
+          dropZone.querySelector('.wb-drop-text').textContent = '✓ Als Aufgabe ins Projekt übernommen';
+          setTimeout(()=>{ if(state.whiteboardOpen) render(); }, 1100);
+        }
+      });
+    }
+  }
+}
+
+/* ---------------- login screen — ambient typing demo -----------------
+   Purely cosmetic: writes into the DOM directly, never touches state,
+   and cancels itself the moment the person actually clicks into a field. */
+let loginDemoTimers = [];
+let loginDemoActive = false;
+function stopLoginDemo(clearFields){
+  loginDemoActive = false;
+  loginDemoTimers.forEach(t=>clearTimeout(t));
+  loginDemoTimers = [];
+  if(clearFields){
+    const le = document.getElementById('loginEmail');
+    const lp = document.getElementById('loginPassword');
+    if(le && le.dataset.demo){ le.value=''; delete le.dataset.demo; }
+    if(lp && lp.dataset.demo){ lp.value=''; delete lp.dataset.demo; }
+  }
+}
+function startLoginDemo(emailEl, pwdEl){
+  loginDemoActive = true;
+  const demoEmail = 'patrick@studio-boe.de';
+  const demoPwd = 12;
+  const t = (fn, ms)=>{ const id=setTimeout(()=>{ if(loginDemoActive) fn(); }, ms); loginDemoTimers.push(id); };
+
+  const run = ()=>{
+    emailEl.value=''; pwdEl.value=''; emailEl.dataset.demo='1'; pwdEl.dataset.demo='1';
+    let i=0;
+    const typeEmail = ()=>{
+      if(!loginDemoActive) return;
+      if(i<=demoEmail.length){ emailEl.value = demoEmail.slice(0,i); i++; t(typeEmail, 55); }
+      else t(typePwd, 450);
+    };
+    let j=0;
+    const typePwd = ()=>{
+      if(!loginDemoActive) return;
+      if(j<=demoPwd){ pwdEl.value = '•'.repeat(j); j++; t(typePwd, 90); }
+      else t(pressBtn, 500);
+    };
+    const pressBtn = ()=>{
+      if(!loginDemoActive) return;
+      const btn = document.querySelector('[data-act="login"]');
+      if(btn){ btn.style.transform='scale(.97)'; t(()=>{ if(btn) btn.style.transform=''; }, 160); }
+      t(run, 2600);
+    };
+    typeEmail();
+  };
+  t(run, 900);
+}
+
+function onAction(e){
+  const el = e.currentTarget;
+  const act = el.dataset.act;
+  const val = el.dataset.val;
+
+  if(act==='lang'){ state.lang = val; render(); }
+  else if(act==='toggle-pwd'){ state.pwdVisible = !state.pwdVisible; render(); }
+  else if(act==='login'){ state.authed = true; state.view='dashboard'; render(); }
+  else if(act==='nav'){ state.view = val; state.whiteboardOpen=false; render(); }
+  else if(act==='open-project'){ state.view='project'; state.projectId=val; state.projectTab='overview'; render(); }
+  else if(act==='project-tab'){ state.projectTab = val; render(); }
+  else if(act==='open-board'){ state.whiteboardOpen = true; render(); }
+  else if(act==='close-board'){ state.whiteboardOpen = false; render(); }
+  else if(act==='accent-mode'){ state.accentMode = val; render(); }
+  else if(act==='font'){ state.font = val; render(); }
+  else if(act==='theme-toggle'){ state.theme = state.theme==='dark' ? 'light' : 'dark'; render(); }
+  else if(act==='planning-nav'){
+    if(val==='reset') state.planningDayOffset = 0;
+    else state.planningDayOffset += parseInt(val,10);
+    render();
+  }
+  else if(act==='toggle-planning-project'){
+    state.planningExpanded = state.planningExpanded === val ? null : val;
+    render();
+  }
+  else if(act==='toggle-assign'){
+    const proj = DATA.projects.find(p=>p.id===el.dataset.proj);
+    const mid = el.dataset.member;
+    if(proj){
+      const i = proj.assignedTeam.indexOf(mid);
+      if(i>-1) proj.assignedTeam.splice(i,1);
+      else proj.assignedTeam.push(mid);
+    }
+    render();
+  }
+  else if(act==='tt-view-member'){ state.ttViewMemberId = val; render(); }
+  else if(act==='tt-add-time'){
+    const memberSel = document.getElementById('teMember');
+    const dateEl = document.getElementById('teDate');
+    const projSel = document.getElementById('teProject');
+    const hoursEl = document.getElementById('teHours');
+    const noteEl = document.getElementById('teNote');
+    const hours = parseFloat(hoursEl.value);
+    if(memberSel && dateEl.value && hours > 0){
+      DATA.timeEntries.push({
+        id:'te'+Date.now(), memberId:memberSel.value, date:dateEl.value,
+        hours, projectId: projSel.value || null, note: noteEl.value.trim()
+      });
+      state.ttViewMemberId = memberSel.value;
+    }
+    render();
+  }
+  else if(act==='tt-add-absence'){
+    const memberSel = document.getElementById('teMember');
+    const mid = memberSel ? memberSel.value : currentMember().id;
+    DATA.absences.push({ id:'ab'+Date.now(), memberId:mid, date:TT_TODAY, type:val, note:'' });
+    state.ttViewMemberId = mid;
+    render();
+  }
+  else if(act==='add-task'){
+    if(state.newTaskText && state.newTaskText.trim()){
+      const sel = document.getElementById('newTaskProjectSelect');
+      const projTitle = sel && sel.value !== 'Kein Projekt' ? sel.value : DATA.projects[0].title;
+      DATA.tasks.unshift({ id:'t'+Date.now(), title:state.newTaskText.trim(), tag:'Neu', project:projTitle, date:'gerade eben', done:false });
+      state.newTaskText='';
+    }
+    render();
+  }
+  else if(act==='new-task-project'){
+    const p = currentProject();
+    DATA.tasks.unshift({ id:'t'+Date.now(), title:'Neue Aufgabe', tag:'Neu', project:p.title, date:'gerade eben', done:false });
+    render();
+  }
+  else if(act==='new-project'){ /* visual only */ }
+}
+
+render();
+</script>
+</body>
+</html>
